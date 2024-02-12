@@ -11,29 +11,22 @@ module.exports = class ValidatorsLoader {
         this.customValidators = customValidators;
     }
     load() {
-
         const validators = {};
 
-        /**
-         * load schemes
-         * load models ( passed to the consturctor )
-         * load custom validators
-         */
+        // Load validator schemas
         const schemes = loader('./managers/**/*.schema.js');
 
-        Object.keys(schemes).forEach(sk => {
-            let pine = new Pine({ models: this.models, customValidators: this.customValidators });
-            validators[sk] = {};
-            Object.keys(schemes[sk]).forEach(s => {
-                validators[sk][s] = async (data) => {
-                    return (await pine.validate(data, schemes[sk][s]));
-                }
-                /** also exports the trimmer function for the same */
-                validators[sk][`${s}Trimmer`] = async (data) => {
-                    return (await pine.trim(data, schemes[sk][s]));
-                }
+        // Iterate over loaded schemas
+        Object.keys(schemes).forEach(schemaKey => {
+            const pine = new Pine({ models: this.models, customValidators: this.customValidators });
+            validators[schemaKey] = {};
+
+            // Generate validator and trimmer functions for each schema
+            Object.keys(schemes[schemaKey]).forEach(subKey => {
+                validators[schemaKey][subKey] = async (data) => await pine.validate(data, schemes[schemaKey][subKey]);
+                validators[schemaKey][`${subKey}Trimmer`] = async (data) => await pine.trim(data, schemes[schemaKey][subKey]);
             });
-        })
+        });
 
         return validators;
     }

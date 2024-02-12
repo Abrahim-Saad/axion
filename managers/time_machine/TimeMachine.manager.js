@@ -1,9 +1,9 @@
-module.exports = class TimeMachine { 
+module.exports = class TimeMachine {
     constructor({ cortex, config, managers, oyster, aeon }) {
-        this.cortex             = cortex;
-        this.oyster             = oyster;
-        this.aeon               = aeon;
-        this.cortexExposed      = ['removeInitialScoreByTime','dailyDecreasePostScore', 'mixTopics'];
+        this.cortex = cortex;
+        this.oyster = oyster;
+        this.aeon = aeon;
+        this.cortexExposed = ['removeInitialScoreByTime', 'dailyDecreasePostScore', 'mixTopics'];
     }
 
     removeInitialScoreByTime({ createdPost, darbId, iterations, interval, decrease }) {
@@ -15,12 +15,12 @@ module.exports = class TimeMachine {
         });
         console.log(iterations);
         iterations -= 1;
-        if (iterations > 0){
-            this.aeon.call( {
-                cortex: { 
-                    method: 'emitToOneOf', 
-                    args: { 
-                        type: 'darbwali-axion', 
+        if (iterations > 0) {
+            this.aeon.call({
+                cortex: {
+                    method: 'emitToOneOf',
+                    args: {
+                        type: 'darbwali-axion',
                         call: 'timeMachine.removeInitialScoreByTime',
                         data: {
                             createdPost,
@@ -36,13 +36,13 @@ module.exports = class TimeMachine {
             })
         }
     }
-    
-    async dailyDecreasePostScore({darbId, createdPost, interval, iterations}) {
+
+    async dailyDecreasePostScore({ darbId, createdPost, interval, iterations }) {
         const topicId = `topic:${darbId}|${createdPost.topic}`;
         const currentScore = await this.oyster.call('relation_score', {
             relation: '_members',
             _id: topicId,
-            items:[createdPost._id]
+            items: [createdPost._id]
         });
         const dailyDecrease = Math.floor(parseInt(currentScore[createdPost._id]) * 0.05);
         this.oyster.call('update_relations', {
@@ -52,7 +52,7 @@ module.exports = class TimeMachine {
             }
         });
         iterations -= 1;
-        if (iterations > 0){
+        if (iterations > 0) {
             this.aeon.call({
                 cortex: {
                     method: 'emitToOneOf',
@@ -73,7 +73,7 @@ module.exports = class TimeMachine {
         }
     }
 
-    async mixTopics({darbId}) {
+    async mixTopics({ darbId }) {
         const mixTopic = `topic:${darbId.split(':')[1]}|mix`
         const topics = await this.oyster.call('nav_relation', {
             relation: '_members',
@@ -83,7 +83,7 @@ module.exports = class TimeMachine {
             withScores: true,
         });
 
-        for(const topic of Object.keys(topics)) {
+        for (const topic of Object.keys(topics)) {
             const posts = await this.oyster.call('nav_relation', {
                 relation: '_members',
                 label: 'post',
@@ -92,9 +92,9 @@ module.exports = class TimeMachine {
                 withScores: true,
             });
             const postKeys = Object.keys(posts);
-            if(postKeys.length != 0 ) {
+            if (postKeys.length != 0) {
                 const trimmedPosts = postKeys.splice(0, Math.ceil(postKeys.length * 0.15));
-                this.oyster.call('update_relations', { _id: mixTopic, add: { _members: trimmedPosts }});
+                this.oyster.call('update_relations', { _id: mixTopic, add: { _members: trimmedPosts } });
             }
         }
     }
